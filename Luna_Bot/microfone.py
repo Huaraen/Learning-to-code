@@ -1,66 +1,107 @@
 import speech_recognition as sr
-from commands import Command as cmd
-from time import sleep
-name_bot = ("luna")
+from commands import Audio, Server
+from gatilho import Verifica_voz
+from random import randrange
+verify_voice = Verifica_voz()
+server = Server()
+audio = Audio()
 
-# obtain audio from the microphone
-def mic_on(power=False, time=4):      
-    reconhecimento = sr.Recognizer()
-    sleep(int(time))
-    with sr.Microphone() as mic:
-        
-        print(">>>: ")
-        reconhecimento_do_mic = reconhecimento.listen(mic)
-        
-        if power == True:
-            try:
-                voice = reconhecimento.recognize_google(reconhecimento_do_mic,language= "pt-BR")
-                voice = voice.lower()
-                print (voice)
+class Mic:
+    def __init__(self, name_bot):
+        self.__name_bot = name_bot
+        self.reconhecimento = sr.Recognizer()
 
-                if name_bot == voice:
-                    return name_bot
-                elif name_bot in voice:
-                    return voice.replace((name_bot+" "), "")
+    def power (self, is_power):
+        if is_power: return Power_on().mic_on(self, is_power)
+        else: return Power_off().mic_on(self, is_power)
 
-            except sr.UnknownValueError:
-                print (name_bot.title(), ":  não consegui entender o que você disse")
-                return "unknown command"        
-            except sr.RequestError as e:
-                print (name_bot.title(), ":  Não foi possivel requisitar resultados de Google Speech Recognition service; {0}".format(e))
-                cmd().toca_audios("Hello_Monkeys")
-                return "unknown command"
-            else:
-                x = "Just Voice "
-                x += voice
-                return x
+    @property
+    def name_bot(self):
+        return self.__name_bot
 
-        if power == False:
-            try:
-                voice = reconhecimento.recognize_google(reconhecimento_do_mic,language= "pt-BR")
-                voice = voice.lower()
-                print (voice)
-
-
-                if name_bot in voice:
-                    trig_turn_on = ["turn on", "ligar", "acorde", "bom dia", "boa tarde", "boa noite", "desperte"]
-                    for command_voice in trig_turn_on:
-                        if command_voice in voice:
-                            return True
-                else: return False
-
-            except sr.UnknownValueError:
-                print (name_bot.title(), ":  não consegui entender o que você disse")
-                return False
-            except sr.RequestError as e:
-                print (name_bot.title(), ":  Não foi possivel requisitar resultados de Google Speech Recognition service; {0}".format(e))
-                return False
-        return False
+class Power_on:
+    '''se sistema se encontra ligado, identifica a voz
+    e executa função.'''
+    def __init__(self):
+        self.__trig_turn_off = ["turn off", "vai pra casa", "dormir", "boa noite"]
     
-if __name__ == "__main__":
+    def mic_on(self, Miic, is_power):
+        print ("\n｡◕‿◕｡")
+        voice = Mic_turn_on().reconhecimento_mic(is_power)
+        if Miic.name_bot == voice: verify_voice.voz_bot ()
+        elif Miic.name_bot in voice:
+            for command_voice in self.__trig_turn_off:
+                if command_voice in voice: self._sleep()
+            voice = voice.replace((Miic.name_bot+" "), "")
+            return verify_voice.realiza_comandos(voice)
+        else:
+            return verify_voice.just_voice (voice)
+
+    def _sleep(self):
+        roll4 = randrange(1,4)
+        if roll4 == 1: audio.toca_audios("go_to_sleep_6", "bot")
+        else: audio.toca_randomic_audio("go_to_sleep_", 5)
+
+class Power_off:
+    '''se sistema se encontra desligado, identifica a voz
+    e se tiver o comando de ligar, liga o sistema.'''
+    def __init__(self):
+        self.__trig_turn_on = ["turn on", " ligar", "acorde", "bom dia", "boa tarde", "boa noite", "despert"]
+
+    def mic_on(self, Miic, is_power):
+        voice = Mic_turn_on().reconhecimento_mic(is_power)
+        if Miic.name_bot in voice:
+            for command_voice in self.__trig_turn_on:
+                if command_voice in voice:
+                    audio.toca_randomic_audio("bot_greetings_", 5)
+                    server.server_notification("Oláa!!", Miic.name_bot.title())
+                    return True
+            return self.__sleeping()
+        else: return self.__sleeping()
+
+    def __sleeping(self):
+        server.server_notification(texto="Sleeping...", cardinal="Luna") 
+        roll20 = randrange(1, 20)
+        if roll20 <= 15: audio.toca_audios("go_to_sleep_2", "bot")
+        return False
+
+class Mic_turn_on(Mic):
+    def reconhecimento_mic(self, power):
+        with sr.Microphone() as mic:
+            reconhecimento_do_mic = self.reconhecimento.listen(mic)
+            try:
+                voice = self.reconhecimento.recognize_google(reconhecimento_do_mic,language= "pt-BR")
+                voice = voice.lower()
+                print (">>: {}".format(voice))
+                return voice
+            except sr.UnknownValueError:
+                if power: return self.__power_on_unknownvalue_exception()
+                else: return self.__power_off_unknownvalue_exception()     
+            except sr.RequestError as e:
+                if power: return self.__power_on_requesterror_exception(e)
+                else: return self.__power_off_requesterror_exception(e)
+
+    def __power_on_unknownvalue_exception(self):
+        server.server_notification ("não consegui entender o que você disse", self.name_bot.title())
+        roll20 = randrange(1,20)
+        if roll20 > 13: audio.toca_randomic_audio("beep_", 9)
+        return "unknown command" 
+    def __power_on_requesterror_exception(self, e):
+        print (self.name_bot.title(), ":  Error, Error. . .; {0}".format(e))
+        audio.toca_audios("Hello_Monkeys")
+        return "unknown command"
+
+    def __power_off_unknownvalue_exception(self):        
+        server.server_notification (":  Não estou em casa, deixe seu recado e eu vejo quando voltar", (self.name_bot.title()))
+        return False
+    def __power_off_requesterror_exception(self, e):    
+        '''Não foi possivel requisitar resultados de Google Speech Recognition service'''
+        server.server_notification (":  Error, Error. . . {0}".format(e)), (self.name_bot.title())
+        return False
+
+
+if "__main__" == __name__:
+    power = True
     while True:
-        sair = mic_on()
-        print (sair)
-        if sair == "sair" or sair == "fechar":
-            cmd().server_notification("Fechando Programa")
-            exit ()
+        x = Mic_turn_on().reconhecimento_mic(power)
+        if x == "sair": exit ()
