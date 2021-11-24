@@ -1,4 +1,4 @@
-from commands import *
+from commands import Server
 from microfone_off import Mic
 from gatilho import Audio, Datahora
 audio = Audio()
@@ -49,7 +49,7 @@ class Power_on:
             return self.desligar(Switch)
         print ("realizando comando: {}".format (voz))
     def ligar(self, Switch):
-        Server().server_notification ("Programa já em andamento")
+        server.server_notification ("Programa já em andamento")
     def desligar(self, Switch):
         Switch.estado_atual = Power_off()
         Switch.power = False
@@ -62,13 +62,13 @@ class Power_off:
         Switch.estado_atual = Power_on()
         Switch.power = True
     def desligar(self, Switch):
-        Server().server_notification ("Programa já se encontra desligado")
+        server.server_notification ("Programa já se encontra desligado")
 
 
 if __name__ == "__main__":
     iniciar  = Iniciar()
     switch   = Switch()
+    server   = Server()
     main     = Main()
     mic      = Mic(main.name_bot)
-    App("Atalhos")
     main.exe()
