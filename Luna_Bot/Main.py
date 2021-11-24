@@ -1,55 +1,74 @@
-from commands import Command, Datahora
-from gatilho  import Body as cmmd
-import microfone     as mic
-# import microfone_off as mic
-
-cmd = Command()
+from commands import *
+from microfone_off import Mic
+from gatilho import Audio, Datahora
+audio = Audio()
 dh = Datahora()
-bot = "Luna"
-    
-def main ():
-    checkin = iniciar()
-    intro(checkin)
-    power = False
-    paciencia = 0
-    while True:
-        if power == True:
-            trigger = mic.mic_on(power, paciencia)
-            if bot.lower() == trigger:
-                cmd.toca_audios("nya_button")
-            elif not "unknown command" in trigger:
-                if "Just Voice" in trigger:
-                    cmmd().check_voice(trigger.replace("Just Voice", ""))
-                elif "definir paciencia" in trigger:
-                    x = int (cmmd().paciencia())
-                    if x != None: paciencia = x
-                else: 
-                    x = cmmd().check_trigger(trigger)
-                    if x != None:
-                        power = x
-
-        elif power == False:
-            power = mic.mic_on(power)
-        else: pass
 
 
-def iniciar ():
-    print ("\nIniciando . . \n")
-    checkin = input ("Por Favor, informe nick: ")
-    cmd.toca_audios("link_start")
-    return checkin
+class Main:
+    def __init__(self):
+        self.__name_bot = "luna"
+    @property
+    def name_bot (self):
+        return self.__name_bot
+    def exe(self):
+        iniciar.iniciar(self.name_bot)
+        while True:
+            switch.check_power()
 
-def intro (checkin):
-    print ("{}: Bom dia {}" .format (bot, checkin))
-    cmd.toca_randomic_audio("bot_greetings_0", 5)
-    print ("{}: Hoje é dia {}" .format (bot, dh.data))
 
+class Iniciar:
+    def iniciar (self, bot):
+        print ("\nIniciando . . \n")
+        checkin = input ("Por Favor, informe nick: ")
+        audio.toca_audios("link_start")
+        return self.__intro (checkin, bot)
+
+    def __intro (self, checkin, bot):
+        print ("{}: olá,  {}" .format (bot, checkin))
+        print ("{}: Hoje é dia {}" .format (bot, dh.data))
+
+
+class Switch:
+    def __init__(self):
+        self.estado_atual = Power_off()
+        self.power = False
+        
+    def check_power(self):
+        self.estado_atual.check_power(self)
+    def ligar(self):
+        self.estado_atual.ligar(self)
+    def desligar(self):
+        self.estado_atual.desligar(self)
+
+
+class Power_on:    
+    def check_power(self, Switch):
+        voz = mic.power(Switch.power)
+        if voz == "sleep":
+            return self.desligar(Switch)
+        print ("realizando comando: {}".format (voz))
+    def ligar(self, Switch):
+        Server().server_notification ("Programa já em andamento")
+    def desligar(self, Switch):
+        Switch.estado_atual = Power_off()
+        Switch.power = False
+
+class Power_off:
+    def check_power(self, Switch):
+        if mic.power(Switch.power):
+            self.ligar(Switch)
+    def ligar(self, Switch):
+        Switch.estado_atual = Power_on()
+        Switch.power = True
+    def desligar(self, Switch):
+        Server().server_notification ("Programa já se encontra desligado")
 
 
 if __name__ == "__main__":
-    main()
-
-'''
-Bandeira de Mood, tendo uma com "angry" e certas palavras fazem descer o humor.
-usar boolean enquanto não impor inteligencia artificial nela.
-'''
+    iniciar  = Iniciar()
+    switch   = Switch()
+    main     = Main()
+    mic      = Mic(main.name_bot)
+    App("Atalhos")
+    main.exe()
